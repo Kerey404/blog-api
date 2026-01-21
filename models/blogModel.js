@@ -1,0 +1,18 @@
+import mongoose from "mongoose";
+
+const blogSchema = new mongoose.Schema({
+    title: {
+        type: String,
+        required: [true, "Title is required"]
+    },
+    body: {
+        type: String,
+        required: [true, "Body is required"]
+    },
+    author: {
+        type: String,
+        default: "Anonymous"
+    }
+}, { timestamps: true }); // Автоматически создает createdAt и updatedAt
+
+export default mongoose.model("Blog", blogSchema);

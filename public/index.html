@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Блог Платформа</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+    <h1>📝 Управление Блогами</h1>
+
+    <div class="card">
+        <h3>Создать новый пост</h3>
+        <input type="text" id="title" placeholder="Заголовок">
+        <textarea id="body" placeholder="Текст поста"></textarea>
+        <input type="text" id="author" placeholder="Автор">
+        <button class="btn-main" onclick="createPost()">Опубликовать</button>
+    </div>
+
+    <div style="text-align: center; margin: 20px;">
+        <button class="btn-load" onclick="loadPosts()">📥 Показать все блоги</button>
+    </div>
+
+    <div id="posts"></div>
+</div>
+<script src="script.js"></script>
+</body>
+</html>
