@@ -22,7 +22,9 @@ export const createBlog = async (req, res) => {
 
 export const deleteBlog = async (req, res) => {
     const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) return res.status(404).send("Invalid ID");
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(404).send("Invalid ID");
+    }
 
     try {
         await Blog.findByIdAndDelete(id);
@@ -34,7 +36,9 @@ export const deleteBlog = async (req, res) => {
 
 export const updateBlog = async (req, res) => {
     const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) return res.status(404).send("Invalid ID");
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(404).send("Invalid ID");
+    }
 
     try {
         const updatedBlog = await Blog.findByIdAndUpdate(id, req.body, { new: true });

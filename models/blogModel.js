@@ -13,6 +13,6 @@ const blogSchema = new mongoose.Schema({
         type: String,
         default: "Anonymous"
     }
-}, { timestamps: true }); // Автоматически создает createdAt и updatedAt
+}, { timestamps: true });
 
 export default mongoose.model("Blog", blogSchema);
