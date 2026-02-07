@@ -1,165 +1,252 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Блог Платформа</title>
-    <link rel="stylesheet" href="style.css">
-    <style>
-        .user-info {
-            text-align: center;
-            margin-bottom: 20px;
-            padding: 15px;
-            background: #f0f9ff;
-            border-radius: 8px;
-        }
-        .btn-logout {
-            background: #dc2626;
-            margin-left: 10px;
-        }
-        .btn-logout:hover {
-            background: #b91c1c;
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuizMaster - Interactive Quiz Platform</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
+<nav class="navbar">
+    <div class="navbar-container">
+        <a href="/" class="navbar-brand">🎯 QuizMaster</a>
+        <div class="navbar-menu">
+            <a href="/" class="navbar-link">Home</a>
+            <a href="/dashboard.html" class="navbar-link" id="dashboardLink" style="display: none;">Dashboard</a>
+            <div class="navbar-user" id="userSection" style="display: none;">
+                <div class="user-avatar" id="userAvatar">🎮</div>
+                <span id="userName"></span>
+                <button class="btn btn-sm btn-danger" onclick="logout()">Logout</button>
+            </div>
+            <div id="authButtons">
+                <a href="/auth.html" class="btn btn-primary btn-sm">Login / Sign Up</a>
+            </div>
+        </div>
+    </div>
+</nav>
+
 <div class="container">
-    <h1>📝 Управление Блогами</h1>
-
-    <!-- Информация о пользователе -->
-    <div id="userInfo" class="user-info" style="display: none;">
-        <p>👤 Вы вошли как: <strong id="userName"></strong></p>
-        <button class="btn-logout" onclick="handleLogout()">Выйти</button>
+    <div class="hero-section">
+        <h1 class="hero-title">🚀 Welcome to QuizMaster!</h1>
+        <p class="hero-subtitle">Create, Share, and Play Interactive Quizzes - Just Like Kahoot!</p>
+        <div class="btn-group flex-center">
+            <a href="/dashboard.html" class="btn btn-primary btn-lg" id="createQuizBtn" style="display: none;">Create Quiz</a>
+            <a href="/auth.html" class="btn btn-primary btn-lg" id="getStartedBtn">Get Started</a>
+            <button class="btn btn-outline btn-lg" onclick="scrollToQuizzes()">Browse Quizzes</button>
+        </div>
     </div>
 
-    <!-- Кнопка авторизации (если не залогинен) -->
-    <div id="authPrompt" style="text-align: center; margin-bottom: 20px;">
-        <p>Пожалуйста, <a href="/auth.html" style="color: #4f46e5; font-weight: 600;">войдите</a> для создания постов</p>
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="card-title">🔍 Find Quizzes</h2>
+        </div>
+        <div class="card-body">
+            <div class="grid grid-3">
+                <div class="form-group">
+                    <label class="form-label">Search</label>
+                    <input type="text" class="form-control" id="searchInput" placeholder="Search quizzes...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <select class="form-control" id="categoryFilter">
+                        <option value="">All Categories</option>
+                        <option value="Science">Science</option>
+                        <option value="History">History</option>
+                        <option value="Math">Math</option>
+                        <option value="Geography">Geography</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Sports">Sports</option>
+                        <option value="General">General</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Difficulty</label>
+                    <select class="form-control" id="difficultyFilter">
+                        <option value="">All Levels</option>
+                        <option value="Easy">Easy</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Hard">Hard</option>
+                    </select>
+                </div>
+            </div>
+            <button class="btn btn-primary btn-block mt-2" onclick="applyFilters()">Apply Filters</button>
+        </div>
     </div>
 
-    <div class="card" id="createPostCard" style="display: none;">
-        <h3>Создать новый пост</h3>
-        <input type="text" id="title" placeholder="Заголовок">
-        <textarea id="body" placeholder="Текст поста"></textarea>
-        <button class="btn-main" onclick="createPost()">Опубликовать</button>
+    <div id="quizzesSection">
+        <h2 class="mb-3">📚 Available Quizzes</h2>
+        <div id="loadingSpinner" class="loading-container">
+            <div class="loader"></div>
+            <p class="loading-text">Loading quizzes...</p>
+        </div>
+        <div id="quizzesGrid" class="grid grid-2"></div>
+        <div id="emptyState" class="empty-state hidden">
+            <div class="empty-state-icon">📭</div>
+            <h3 class="empty-state-title">No Quizzes Found</h3>
+            <p class="empty-state-text">Try adjusting your filters or create your own quiz!</p>
+        </div>
     </div>
-
-    <div style="text-align: center; margin: 20px;">
-        <button class="btn-load" onclick="loadPosts()">📥 Показать все блоги</button>
-    </div>
-
-    <div id="posts"></div>
 </div>
 
 <script>
-    const API = '/blogs';
-    let currentUser = null;
+    const API_URL = '/api';
+    let allQuizzes = [];
 
-    // Проверка авторизации при загрузке
     async function checkAuth() {
-        try {
-            const res = await fetch('/api/auth/check');
-            const data = await res.json();
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                const response = await fetch(`${API_URL}/auth/profile`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
 
-            if (data.isAuthenticated) {
-                currentUser = data.user;
-                document.getElementById('userInfo').style.display = 'block';
-                document.getElementById('userName').textContent = data.user.name;
-                document.getElementById('authPrompt').style.display = 'none';
-                document.getElementById('createPostCard').style.display = 'block';
-            } else {
-                document.getElementById('userInfo').style.display = 'none';
-                document.getElementById('authPrompt').style.display = 'block';
-                document.getElementById('createPostCard').style.display = 'none';
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('userSection').style.display = 'flex';
+                    document.getElementById('authButtons').style.display = 'none';
+                    document.getElementById('dashboardLink').style.display = 'block';
+                    document.getElementById('createQuizBtn').style.display = 'inline-block';
+                    document.getElementById('getStartedBtn').style.display = 'none';
+                    document.getElementById('userName').textContent = data.user.username;
+                    document.getElementById('userAvatar').textContent = data.user.avatar;
+                } else {
+                    localStorage.removeItem('token');
+                }
+            } catch (error) {
+                console.error('Auth check error:', error);
+                localStorage.removeItem('token');
             }
-        } catch (error) {
-            console.error('Auth check error:', error);
         }
     }
 
-    async function handleLogout() {
+    async function loadQuizzes() {
         try {
-            const res = await fetch('/api/auth/logout', { method: 'POST' });
-            const data = await res.json();
+            document.getElementById('loadingSpinner').style.display = 'flex';
+            document.getElementById('quizzesGrid').innerHTML = '';
+            document.getElementById('emptyState').classList.add('hidden');
 
-            if (data.success) {
-                alert('Вы вышли из системы');
-                window.location.reload();
-            }
+            const response = await fetch(`${API_URL}/quizzes`);
+            const data = await response.json();
+
+            allQuizzes = data.quizzes;
+            displayQuizzes(allQuizzes);
         } catch (error) {
-            console.error('Logout error:', error);
+            console.error('Error loading quizzes:', error);
+            showAlert('Failed to load quizzes', 'error');
+        } finally {
+            document.getElementById('loadingSpinner').style.display = 'none';
         }
     }
 
-    async function loadPosts() {
-        const res = await fetch(API);
-        const data = await res.json();
-        const container = document.getElementById('posts');
+    function displayQuizzes(quizzes) {
+        const grid = document.getElementById('quizzesGrid');
 
-        container.innerHTML = data.map(p => `
-            <div class="blog-post card">
-                <h3>${p.title}</h3>
-                <p>${p.body}</p>
-                <small>Автор: ${p.author}</small>
-                ${currentUser ? `
-                <div class="actions">
-                    <button class="btn-edit" onclick="editPost('${p._id}', '${p.title}', '${p.body}')">✏️ Редактировать</button>
-                    <button class="btn-delete" onclick="deletePost('${p._id}')">🗑️ Удалить</button>
-                </div>
-                ` : ''}
-            </div>
-        `).join('');
-    }
-
-    async function createPost() {
-        const title = document.getElementById('title').value;
-        const body = document.getElementById('body').value;
-
-        if (!title || !body) {
-            alert('Заполните все поля!');
+        if (quizzes.length === 0) {
+            document.getElementById('emptyState').classList.remove('hidden');
             return;
         }
 
-        await fetch(API, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                title,
-                body,
-                author: currentUser ? currentUser.name : 'Anonymous'
-            })
-        });
+        grid.innerHTML = quizzes.map(quiz => `
+                <div class="quiz-card" onclick="goToQuiz('${quiz._id}')">
+                    <div class="quiz-card-header">
+                        <div class="quiz-card-icon">${quiz.coverImage}</div>
+                    </div>
+                    <div class="quiz-card-body">
+                        <h3 class="quiz-card-title">${quiz.title}</h3>
+                        <p class="quiz-card-description">${quiz.description || 'No description'}</p>
 
-        document.getElementById('title').value = '';
-        document.getElementById('body').value = '';
-        alert("Пост создан!");
-        loadPosts();
+                        <div class="quiz-meta">
+                            <span class="badge badge-primary">${quiz.category}</span>
+                            <span class="badge ${getDifficultyBadgeClass(quiz.difficulty)}">${quiz.difficulty}</span>
+                        </div>
+
+                        <div class="quiz-meta">
+                            <span class="quiz-meta-item">
+                                📝 ${quiz.questions.length} Questions
+                            </span>
+                            <span class="quiz-meta-item">
+                                🎮 ${quiz.timesPlayed} Plays
+                            </span>
+                        </div>
+
+                        <div class="quiz-meta">
+                            <span class="quiz-meta-item">
+                                👤 By ${quiz.author.username}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
     }
 
-    async function editPost(id, oldTitle, oldBody) {
-        const newTitle = prompt("Новый заголовок:", oldTitle);
-        const newBody = prompt("Новый текст:", oldBody);
+    function applyFilters() {
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const category = document.getElementById('categoryFilter').value;
+        const difficulty = document.getElementById('difficultyFilter').value;
 
-        if (newTitle && newBody) {
-            await fetch(`${API}/${id}`, {
-                method: 'PUT',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ title: newTitle, body: newBody })
-            });
-            loadPosts();
+        let filtered = allQuizzes;
+
+        if (search) {
+            filtered = filtered.filter(quiz =>
+                quiz.title.toLowerCase().includes(search) ||
+                (quiz.description && quiz.description.toLowerCase().includes(search))
+            );
+        }
+
+        if (category) {
+            filtered = filtered.filter(quiz => quiz.category === category);
+        }
+
+        if (difficulty) {
+            filtered = filtered.filter(quiz => quiz.difficulty === difficulty);
+        }
+
+        displayQuizzes(filtered);
+    }
+    function getDifficultyBadgeClass(difficulty) {
+        switch(difficulty) {
+            case 'Easy': return 'badge-success';
+            case 'Medium': return 'badge-warning';
+            case 'Hard': return 'badge-danger';
+            default: return 'badge-primary';
         }
     }
 
-    async function deletePost(id) {
-        if (confirm("Удалить этот пост?")) {
-            await fetch(`${API}/${id}`, { method: 'DELETE' });
-            loadPosts();
+    function goToQuiz(quizId) {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            if (confirm('You need to login to play quizzes. Go to login page?')) {
+                window.location.href = '/auth.html';
+            }
+            return;
         }
+        window.location.href = `/play-quiz.html?id=${quizId}`;
+    }
+
+    function scrollToQuizzes() {
+        document.getElementById('quizzesSection').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function logout() {
+        localStorage.removeItem('token');
+        window.location.reload();
+    }
+
+    function showAlert(message, type) {
+
+        alert(message);
     }
 
     window.addEventListener('load', () => {
         checkAuth();
-        loadPosts();
+        loadQuizzes();
     });
+
+    document.getElementById('searchInput')?.addEventListener('input', applyFilters);
 </script>
 </body>
 </html>

@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Results - QuizMaster</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background: var(--primary);
+            position: absolute;
+            animation: confetti-fall 3s linear infinite;
+        }
+
+        @keyframes confetti-fall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .result-icon {
+            font-size: 6rem;
+            animation: bounce 1s ease infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .score-circle {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            color: white;
+            font-size: 3rem;
+            font-weight: 900;
+            box-shadow: var(--shadow-xl);
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar">
+    <div class="navbar-container">
+        <a href="/" class="navbar-brand">🎯 QuizMaster</a>
+        <div class="navbar-menu">
+            <a href="/" class="navbar-link">Home</a>
+            <a href="/dashboard.html" class="navbar-link">Dashboard</a>
+            <div class="navbar-user">
+                <div class="user-avatar" id="userAvatar">🎮</div>
+                <span id="userName"></span>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <div id="loadingScreen" class="loading-container">
+        <div class="loader"></div>
+        <p class="loading-text">Loading results...</p>
+    </div>
+
+    <div id="resultsScreen" class="hidden" style="max-width: 900px; margin: 40px auto;">
+
+        <div class="card text-center mb-4">
+            <div class="card-body">
+                <div class="result-icon" id="resultIcon">🎉</div>
+                <h1 class="card-title" style="font-size: 2.5rem; margin-bottom: 16px;" id="resultTitle">
+                    Congratulations!
+                </h1>
+                <p class="text-muted" style="font-size: 1.25rem;" id="resultSubtitle">
+                    You've completed the quiz!
+                </p>
+
+                <div class="score-circle" id="scoreCircle">
+                    <span id="finalScore">0</span>
+                </div>
+
+                <h2 class="text-primary mb-3">Your Performance</h2>
+
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-value" id="correctCount">0</div>
+                        <div class="stat-label">Correct Answers</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">❌</div>
+                        <div class="stat-value" id="incorrectCount">0</div>
+                        <div class="stat-label">Incorrect Answers</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🎯</div>
+                        <div class="stat-value" id="accuracyPercent">0%</div>
+                        <div class="stat-label">Accuracy</div>
+                    </div>
+                </div>
+
+                <div class="progress-container mt-4">
+                    <div class="progress-label">
+                        <span>Your Score</span>
+                        <span id="scoreRatio">0/0</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="scoreProgress" style="width: 0%;">
+                            <span id="scorePercentText">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="btn-group flex-center mt-4">
+                    <button class="btn btn-primary btn-lg" onclick="playAgain()">
+                        🔄 Play Again
+                    </button>
+                    <a href="/" class="btn btn-outline btn-lg">
+                        🏠 Home
+                    </a>
+                    <a href="/dashboard.html" class="btn btn-outline btn-lg">
+                        📊 Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">📝 Question Breakdown</h2>
+            </div>
+            <div class="card-body">
+                <div id="questionBreakdown"></div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h2 class="card-title">📚 Quiz Information</h2>
+            </div>
+            <div class="card-body">
+                <div class="flex-between mb-2">
+                    <strong>Quiz Title:</strong>
+                    <span id="quizTitle">-</span>
+                </div>
+                <div class="flex-between mb-2">
+                    <strong>Category:</strong>
+                    <span class="badge badge-primary" id="quizCategory">-</span>
+                </div>
+                <div class="flex-between mb-2">
+                    <strong>Difficulty:</strong>
+                    <span class="badge" id="quizDifficulty">-</span>
+                </div>
+                <div class="flex-between">
+                    <strong>Completed At:</strong>
+                    <span id="completedAt">-</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_URL = '/api';
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionId = urlParams.get('session');
+
+    let gameSession = null;
+
+    async function checkAuth() {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/auth.html';
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/auth/profile`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) {
+                window.location.href = '/auth.html';
+                return;
+            }
+
+            const data = await response.json();
+            document.getElementById('userName').textContent = data.user.username;
+            document.getElementById('userAvatar').textContent = data.user.avatar;
+
+            loadResults();
+        } catch (error) {
+            console.error('Auth error:', error);
+            window.location.href = '/auth.html';
+        }
+    }
+
+    async function loadResults() {
+        if (!sessionId) {
+            alert('Invalid session ID');
+            window.location.href = '/';
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/game/${sessionId}/results`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            const data = await response.json();
+
+            if (!data.success) {
+                alert('Failed to load results');
+                window.location.href = '/';
+                return;
+            }
+
+            gameSession = data.gameSession;
+            displayResults();
+        } catch (error) {
+            console.error('Load results error:', error);
+            alert('Failed to load results');
+            window.location.href = '/';
+        }
+    }
+
+    function displayResults() {
+        document.getElementById('loadingScreen').style.display = 'none';
+        document.getElementById('resultsScreen').classList.remove('hidden');
+
+        const totalScore = gameSession.totalScore;
+        const correctAnswers = gameSession.correctAnswers;
+        const totalQuestions = gameSession.totalQuestions;
+        const accuracy = Math.round((correctAnswers / totalQuestions) * 100);
+        const incorrectAnswers = totalQuestions - correctAnswers;
+
+        if (accuracy >= 80) {
+            document.getElementById('resultIcon').textContent = '🏆';
+            document.getElementById('resultTitle').textContent = 'Excellent Work!';
+            document.getElementById('resultSubtitle').textContent = 'You\'re a quiz master!';
+            createConfetti();
+        } else if (accuracy >= 60) {
+            document.getElementById('resultIcon').textContent = '👏';
+            document.getElementById('resultTitle').textContent = 'Good Job!';
+            document.getElementById('resultSubtitle').textContent = 'Keep practicing!';
+        } else {
+            document.getElementById('resultIcon').textContent = '💪';
+            document.getElementById('resultTitle').textContent = 'Nice Try!';
+            document.getElementById('resultSubtitle').textContent = 'Practice makes perfect!';
+        }
+
+        document.getElementById('finalScore').textContent = totalScore;
+        document.getElementById('correctCount').textContent = correctAnswers;
+        document.getElementById('incorrectCount').textContent = incorrectAnswers;
+        document.getElementById('accuracyPercent').textContent = accuracy + '%';
+        document.getElementById('scoreRatio').textContent = `${correctAnswers}/${totalQuestions}`;
+        document.getElementById('scorePercentText').textContent = accuracy + '%';
+
+        setTimeout(() => {
+            document.getElementById('scoreProgress').style.width = accuracy + '%';
+        }, 300);
+
+        document.getElementById('quizTitle').textContent = gameSession.quiz.title;
+        document.getElementById('quizCategory').textContent = gameSession.quiz.category;
+        document.getElementById('quizDifficulty').textContent = gameSession.quiz.difficulty;
+        document.getElementById('quizDifficulty').className = `badge ${getDifficultyBadgeClass(gameSession.quiz.difficulty)}`;
+
+        const completedDate = new Date(gameSession.completedAt).toLocaleString();
+        document.getElementById('completedAt').textContent = completedDate;
+
+        displayQuestionBreakdown();
+    }
+
+    function displayQuestionBreakdown() {
+        const container = document.getElementById('questionBreakdown');
+
+        container.innerHTML = gameSession.answers.map((answer, index) => `
+                <div class="card mb-2">
+                    <div class="card-body">
+                        <div class="flex-between">
+                            <div style="flex: 1;">
+                                <strong>Question ${index + 1}</strong>
+                                <p class="text-muted mb-2">${answer.question.questionText}</p>
+                                <div class="quiz-meta">
+                                    <span class="badge ${answer.isCorrect ? 'badge-success' : 'badge-danger'}">
+                                        ${answer.isCorrect ? '✅ Correct' : '❌ Incorrect'}
+                                    </span>
+                                    <span class="quiz-meta-item">⏱️ ${answer.timeSpent}s</span>
+                                    <span class="quiz-meta-item">⭐ ${answer.pointsEarned} pts</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+    }
+
+    function createConfetti() {
+        const colors = ['#7C3AED', '#EC4899', '#10B981', '#F59E0B', '#3B82F6'];
+
+        for (let i = 0; i < 50; i++) {
+            setTimeout(() => {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDelay = Math.random() * 3 + 's';
+                confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                document.body.appendChild(confetti);
+
+                setTimeout(() => confetti.remove(), 5000);
+            }, i * 30);
+        }
+    }
+
+    function playAgain() {
+        window.location.href = `/play-quiz.html?id=${gameSession.quiz._id}`;
+    }
+
+    function getDifficultyBadgeClass(difficulty) {
+        switch(difficulty) {
+            case 'Easy': return 'badge-success';
+            case 'Medium': return 'badge-warning';
+            case 'Hard': return 'badge-danger';
+            default: return 'badge-primary';
+        }
+    }
+
+    window.addEventListener('load', checkAuth);
+</script>
+</body>
+</html>
