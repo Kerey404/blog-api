@@ -1,4 +1,5 @@
-const API_URL = '/api';
+const API_URL = "https://quizland-xyy3.onrender.com";
+
 let allQuizzes = [];
 
 async function checkAuth() {
