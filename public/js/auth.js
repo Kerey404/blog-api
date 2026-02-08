@@ -1,4 +1,4 @@
-const API_URL = "https://quizland-xyy3.onrender.com";
+const API_URL = '/api';
 
 
 function switchTab(tab) {
@@ -40,18 +40,19 @@ async function handleLogin(event) {
             body: JSON.stringify({ email, password })
         });
 
-        const data = await response.json();
+        const result = await response.json();
 
-        if (data.success) {
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('user', JSON.stringify(data.user));
+        if (result.success) {
+            localStorage.setItem('token', result.data.token);
+            localStorage.setItem('user', JSON.stringify(result.data.user));
+
             showAlert('✅ Login successful! Redirecting...', 'success');
 
             setTimeout(() => {
                 window.location.href = '/dashboard.html';
             }, 1000);
         } else {
-            showAlert('❌ ' + data.message, 'error');
+            showAlert('❌ ' + result.message, 'error');
         }
     } catch (error) {
         console.error('Login error:', error);
@@ -61,7 +62,6 @@ async function handleLogin(event) {
         btn.textContent = 'Login';
     }
 }
-
 async function handleRegister(event) {
     event.preventDefault();
 
@@ -86,8 +86,8 @@ async function handleRegister(event) {
         const data = await response.json();
 
         if (data.success) {
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('user', JSON.stringify(data.user));
+            localStorage.setItem('token', data.data.token);
+            localStorage.setItem('user', JSON.stringify(data.data.token));
             showAlert('✅ Account created successfully! Redirecting...', 'success');
 
             setTimeout(() => {

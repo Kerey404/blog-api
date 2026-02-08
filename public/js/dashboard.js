@@ -1,4 +1,4 @@
-const API_URL = "https://quizland-xyy3.onrender.com";
+const API_URL = '/api';
 let currentUser = null;
 let myQuizzes = [];
 

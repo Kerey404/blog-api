@@ -31,7 +31,7 @@
         <h1 class="hero-title">🚀 Welcome to QuizMaster!</h1>
         <p class="hero-subtitle">Create, Share, and Play Interactive Quizzes - Just Like Kahoot!</p>
         <div class="btn-group flex-center">
-            <a href="/dashboard.html" class="btn btn-primary btn-lg" id="createQuizBtn" style="display: none;">Create Quiz</a>
+            <a href="/create-quiz.html" class="btn btn-primary btn-lg" id="createQuizBtn" style="display: none;">Create Quiz</a>
             <a href="/auth.html" class="btn btn-primary btn-lg" id="getStartedBtn">Get Started</a>
             <button class="btn btn-outline btn-lg" onclick="scrollToQuizzes()">Browse Quizzes</button>
         </div>
@@ -105,20 +105,22 @@
                 });
 
                 if (response.ok) {
-                    const data = await response.json();
+                    const result = await response.json();
+                    const user = result.data.user;
+
                     document.getElementById('userSection').style.display = 'flex';
                     document.getElementById('authButtons').style.display = 'none';
                     document.getElementById('dashboardLink').style.display = 'block';
                     document.getElementById('createQuizBtn').style.display = 'inline-block';
                     document.getElementById('getStartedBtn').style.display = 'none';
-                    document.getElementById('userName').textContent = data.user.username;
-                    document.getElementById('userAvatar').textContent = data.user.avatar;
+
+                    document.getElementById('userName').textContent = user.username;
+                    document.getElementById('userAvatar').textContent = user.avatar;
                 } else {
                     localStorage.removeItem('token');
                 }
             } catch (error) {
                 console.error('Auth check error:', error);
-                localStorage.removeItem('token');
             }
         }
     }

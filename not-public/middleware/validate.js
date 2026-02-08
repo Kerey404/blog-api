@@ -14,6 +14,16 @@ export const validateRegister = [
     handleValidationErrors
 ];
 
+export const validateLogin = [
+    body('email')
+        .isEmail()
+        .withMessage('Please provide a valid email'),
+    body('password')
+        .notEmpty()
+        .withMessage('Password is required'),
+    handleValidationErrors
+];
+
 export const validateQuiz = [
     body('title')
         .trim()

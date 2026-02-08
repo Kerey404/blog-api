@@ -78,7 +78,7 @@
                 <div class="empty-state-icon">🎮</div>
                 <h3 class="empty-state-title">No Games Played Yet</h3>
                 <p class="empty-state-text">Start playing quizzes to see your history here!</p>
-                <a href="/" class="btn btn-primary">Browse Quizzes</a>
+                <a href="/not-public/publicblic/public" class="btn btn-primary">Browse Quizzes</a>
             </div>
         </div>
     </div>
@@ -98,64 +98,66 @@
 
         try {
             const response = await fetch(`${API_URL}/auth/profile`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
 
-            if (!response.ok) {
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                currentUser = result.data.user;
+
+                document.getElementById('userName').textContent = currentUser.username;
+                document.getElementById('userAvatar').textContent = currentUser.avatar;
+                document.getElementById('welcomeMessage').textContent = `Welcome back, ${currentUser.username}! 👋`;
+
+                updateStats();
+                loadMyQuizzes();
+                loadRecentPlays();
+            } else {
                 localStorage.removeItem('token');
                 window.location.href = '/auth.html';
-                return;
             }
-
-            const data = await response.json();
-            currentUser = data.user;
-
-            document.getElementById('userName').textContent = currentUser.username;
-            document.getElementById('userAvatar').textContent = currentUser.avatar;
-            document.getElementById('welcomeMessage').textContent = `Welcome back, ${currentUser.username}! 👋`;
-
-            updateStats();
-            loadMyQuizzes();
-            loadRecentPlays();
         } catch (error) {
             console.error('Auth error:', error);
-            localStorage.removeItem('token');
             window.location.href = '/auth.html';
         }
     }
 
     function updateStats() {
-        document.getElementById('quizzesCreatedCount').textContent = currentUser.quizzesCreated.length;
-        document.getElementById('quizzesPlayedCount').textContent = currentUser.quizzesPlayed.length;
-    }
+        if (!currentUser) return;
 
+        const createdCount = currentUser.quizzesCreated ? currentUser.quizzesCreated.length : 0;
+        document.getElementById('quizzesCreatedCount').textContent = createdCount;
+
+        const playedCount = currentUser.quizzesPlayed ? currentUser.quizzesPlayed.length : 0;
+        document.getElementById('quizzesPlayedCount').textContent = playedCount;
+
+        const totalPlays = myQuizzes.reduce((sum, quiz) => sum + (quiz.timesPlayed || 0), 0);
+        document.getElementById('totalPlaysCount').textContent = totalPlays;
+    }
     async function loadMyQuizzes() {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/quizzes/my/created`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+            const response = await fetch(`${API_URL}/quizzes/my/created`, { // Убедись, что роут верный
+                headers: { 'Authorization': `Bearer ${token}` }
             });
 
-            const data = await response.json();
-            myQuizzes = data.quizzes;
+            const result = await response.json();
 
-            if (myQuizzes.length === 0) {
-                document.getElementById('myQuizzesLoading').style.display = 'none';
-                document.getElementById('myQuizzesEmpty').classList.remove('hidden');
-                return;
+            if (result.success) {
+                myQuizzes = result.quizzes;
+
+                if (myQuizzes.length === 0) {
+                    document.getElementById('myQuizzesLoading').style.display = 'none';
+                    document.getElementById('myQuizzesEmpty').classList.remove('hidden');
+                } else {
+                    displayMyQuizzes();
+                }
+                updateStats();
             }
-
-            const totalPlays = myQuizzes.reduce((sum, quiz) => sum + quiz.timesPlayed, 0);
-            document.getElementById('totalPlaysCount').textContent = totalPlays;
-
-            displayMyQuizzes();
         } catch (error) {
             console.error('Error loading quizzes:', error);
-            document.getElementById('myQuizzesLoading').innerHTML = '<p class="text-danger">Failed to load quizzes</p>';
+            document.getElementById('myQuizzesLoading').innerHTML = '<p class="text-danger">Failed to load</p>';
         }
     }
 
@@ -197,30 +199,37 @@
 
     function loadRecentPlays() {
         const container = document.getElementById('recentPlaysContainer');
-        const recentPlays = currentUser.quizzesPlayed.slice(-5).reverse();
+
+        const recentPlays = (currentUser.quizzesPlayed || []).slice(-5).reverse();
 
         if (recentPlays.length === 0) {
             document.getElementById('recentPlaysEmpty').classList.remove('hidden');
+            document.getElementById('recentPlaysContainer').innerHTML = ''; // Очищаем контейнер
             return;
         }
 
+        document.getElementById('recentPlaysEmpty').classList.add('hidden');
+
         container.innerHTML = recentPlays.map(play => {
             const date = new Date(play.playedAt).toLocaleDateString();
+
+            const quizTitle = play.quiz ? play.quiz.title : 'Unknown Quiz';
+
             return `
-                    <div class="card mb-2">
-                        <div class="flex-between">
-                            <div>
-                                <strong>Quiz ID: ${play.quiz}</strong>
-                                <br>
-                                <small class="text-muted">Played on ${date}</small>
-                            </div>
-                            <div class="text-center">
-                                <div class="stat-value" style="font-size: 1.5rem;">${play.score}</div>
-                                <div class="text-muted">Points</div>
-                            </div>
+                <div class="card mb-2">
+                    <div class="flex-between">
+                        <div>
+                            <strong>${quizTitle}</strong>
+                            <br>
+                            <small class="text-muted">Played on ${date}</small>
+                        </div>
+                        <div class="text-center">
+                            <div class="stat-value" style="font-size: 1.5rem;">${play.score}</div>
+                            <div class="text-muted">Points</div>
                         </div>
                     </div>
-                `;
+                </div>
+            `;
         }).join('');
     }
 

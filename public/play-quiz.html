@@ -133,16 +133,19 @@
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
-            if (!response.ok) {
+            const result = await response.json();
+
+            if (response.ok && result.success && result.data && result.data.user) {
+                const user = result.data.user;
+                document.getElementById('userName').textContent = user.username;
+                document.getElementById('userAvatar').textContent = user.avatar;
+
+                loadQuiz();
+            } else {
+                console.error('Auth check failed:', result.message);
+                localStorage.removeItem('token');
                 window.location.href = '/auth.html';
-                return;
             }
-
-            const data = await response.json();
-            document.getElementById('userName').textContent = data.user.username;
-            document.getElementById('userAvatar').textContent = data.user.avatar;
-
-            loadQuiz();
         } catch (error) {
             console.error('Auth error:', error);
             window.location.href = '/auth.html';

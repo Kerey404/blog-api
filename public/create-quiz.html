@@ -169,14 +169,17 @@
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
-            if (!response.ok) {
-                window.location.href = '/auth.html';
-                return;
-            }
+            const result = await response.json();
 
-            const data = await response.json();
-            document.getElementById('userName').textContent = data.user.username;
-            document.getElementById('userAvatar').textContent = data.user.avatar;
+            if (response.ok && result.success && result.data && result.data.user) {
+                document.getElementById('userName').textContent = result.data.user.username;
+                document.getElementById('userAvatar').textContent = result.data.user.avatar;
+
+            } else {
+                console.error('Auth failed:', result.message);
+                localStorage.removeItem('token');
+                window.location.href = '/auth.html';
+            }
         } catch (error) {
             console.error('Auth error:', error);
             window.location.href = '/auth.html';
