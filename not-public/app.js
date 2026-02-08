@@ -13,8 +13,7 @@ dotenv.config();
 const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// --- ИСПРАВЛЕНИЕ CORS ---
-// Теперь сервер будет принимать запросы только с твоего домена на Netlify
+
 app.use(cors({
     origin: process.env.FRONTEND_URL || 'https://quizland1.netlify.app',
     credentials: true
