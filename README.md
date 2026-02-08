@@ -4,7 +4,6 @@
 
 **Subject:** Web Development Final Project 
 
-**Grade Goal:** Full Marks (Criteria Compliance) 
 
 ---
 
@@ -16,7 +15,7 @@ The project follows a **Client-Server architecture**, where the backend provides
 
 ---
 
-## 🛠 Project Setup (10 Points)
+## 🛠 Project Setup 
 
 The project is built using **Node.js** and **Express.js**. It follows a strictly **modular structure** for better maintainability and scalability:
 
@@ -51,16 +50,19 @@ The application uses **MongoDB Atlas** as the primary database with **Mongoose**
 
 ---
 
-## 📡 API Documentation (20 Points)
+## 📡 API Documentation 
 
 ### 1. Authentication (Public Endpoints)
 
 | Method | Endpoint | Description |
 | --- | --- | --- |
 | **POST** | `/api/auth/register` | Register a new user with hashed password.
-
  |
 | **POST** | `/api/auth/login` | Authenticate user and return JWT.
+
+<img width="887" height="807" alt="image" src="https://github.com/user-attachments/assets/3943a2af-b4fa-4a68-9c12-85675bfb0de2" />
+<img width="901" height="815" alt="image" src="https://github.com/user-attachments/assets/3975590b-a007-45c1-9768-7dff319d00fc" />
+
 
  |
 
@@ -96,7 +98,7 @@ The application uses **MongoDB Atlas** as the primary database with **Mongoose**
 
 ---
 
-## 🔐 Authentication & Security (10 Points)
+## 🔐 Authentication & Security 
 
 * 
 **JWT (JSON Web Tokens)**: Used for secure user authentication across private endpoints.
@@ -110,7 +112,7 @@ The application uses **MongoDB Atlas** as the primary database with **Mongoose**
 
 ---
 
-## ⚠️ Validation & Error Handling (5 Points)
+## ⚠️ Validation & Error Handling 
 
 * 
 **Global Middleware**: A centralized error-handling middleware manages all server errors and returns meaningful JSON responses.
@@ -123,7 +125,7 @@ The application uses **MongoDB Atlas** as the primary database with **Mongoose**
 
 ---
 
-## 🌍 Deployment (10 Points)
+## 🌍 Deployment
 
 The project is fully deployed and accessible:
 
